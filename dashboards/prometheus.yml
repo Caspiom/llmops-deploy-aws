@@ -1,0 +1,8 @@
+# Scrape local das métricas do serviço (usado pelo profile "obs" do compose).
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: "llmops"
+    static_configs:
+      - targets: ["app:8000"]

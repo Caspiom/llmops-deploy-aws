@@ -1,0 +1,18 @@
+# Sobe o serviço + (opcional) Prometheus para scraping local das métricas.
+# `docker compose up app` roda só a API. O Prometheus é opcional p/ ver os
+# gráficos de latência/custo localmente antes de ir pra AWS.
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_PROVIDER=fixture
+
+  prometheus:
+    image: prom/prometheus:latest
+    profiles: ["obs"]          # só sobe com: docker compose --profile obs up
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./dashboards/prometheus.yml:/etc/prometheus/prometheus.yml:ro
