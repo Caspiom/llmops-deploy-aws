@@ -7,3 +7,10 @@ venv/
 .DS_Store
 data/*.bin
 .ragas_cache/
+
+# terraform
+infra/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log

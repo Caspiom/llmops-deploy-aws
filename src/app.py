@@ -7,16 +7,18 @@ Endpoints:
 from __future__ import annotations
 import time
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import PlainTextResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
 
-from .observability import log_event, observe, record_usage
-from .providers import get_provider
+from .observability import BUDGET_LIMIT, BUDGET_REJECTED, BUDGET_SPENT, log_event, observe, record_usage
+from .providers import BudgetExceeded, ProviderError, get_provider
 
 app = FastAPI(title="llmops-deploy-aws", version="0.1.0")
-_provider = get_provider()
+_provider = get_provider()  # falha ao subir se a config for inválida (ex.: anthropic sem teto)
+if hasattr(_provider, "max_cost_usd"):
+    BUDGET_LIMIT.set(_provider.max_cost_usd)
 
 
 class GenerateRequest(BaseModel):
@@ -33,14 +35,25 @@ class GenerateResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "provider": _provider.__class__.__name__}
+    return {"status": "ok", "provider": _provider.__class__.__name__}  # sem custo e sem chamar o provider
 
 
 @app.post("/generate", response_model=GenerateResponse)
 def generate(req: GenerateRequest):
     with observe("generate"):
         start = time.perf_counter()
-        gen = _provider.generate(req.prompt)
+        try:
+            gen = _provider.generate(req.prompt)
+        except BudgetExceeded as e:
+            BUDGET_REJECTED.inc()
+            log_event(event="budget_exceeded", detail=str(e))
+            raise HTTPException(status_code=429, detail="teto de custo do serviço atingido") from None
+        except ProviderError as e:
+            log_event(event="provider_error", detail=str(e))
+            raise HTTPException(status_code=502, detail="falha no provider de LLM") from None
+        finally:
+            if hasattr(_provider, "spent_usd"):
+                BUDGET_SPENT.set(_provider.spent_usd)
         latency_ms = (time.perf_counter() - start) * 1000
         cost = record_usage(gen.model, gen.prompt_tokens, gen.completion_tokens)
         log_event(

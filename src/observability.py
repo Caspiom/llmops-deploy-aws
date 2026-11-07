@@ -7,7 +7,7 @@ import sys
 import time
 from contextlib import contextmanager
 
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter, Gauge, Histogram
 
 # --- Métricas (expostas em /metrics no formato Prometheus) ---
 REQUESTS = Counter(
@@ -24,11 +24,16 @@ COST = Counter(
     "llmops_estimated_cost_usd_total", "Custo estimado (USD)", ["model"]
 )
 
-# Tabela de preço ILUSTRATIVA (USD por 1k tokens). Fixture é ~grátis; os valores
+BUDGET_SPENT = Gauge("llmops_budget_spent_usd", "Gasto confirmado + reservas em voo (USD)")
+BUDGET_LIMIT = Gauge("llmops_budget_limit_usd", "Teto de custo duro do provider (USD)")
+BUDGET_REJECTED = Counter("llmops_budget_rejected_total", "Requisições barradas pelo teto (modelo não chamado)")
+
+# Tabela de preço (fixture ilustrativo; haiku-5-5 conferido na doc em 2026-11-05). (USD por 1k tokens). Fixture é ~grátis; os valores
 # reais entram quando houver provider real. Serve p/ demonstrar o mecanismo de
 # rastreio de custo por request — o diferencial do pilar.
 PRICE_PER_1K = {
     "fixture-1": {"prompt": 0.00005, "completion": 0.00010},
+    "claude-haiku-5-5": {"prompt": 0.0001, "completion": 0.0005},  # US$0,10 / US$0,50 por MTok
 }
 
 

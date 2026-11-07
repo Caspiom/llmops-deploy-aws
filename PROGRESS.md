@@ -2,6 +2,7 @@
 
 Último ponto onde parei (atualize ao fim de cada sessão de 1h):
 
-- **Data:** 2026-10-28 (sessão feita pelo Hermes a pedido do Lucas — ver `NOTAS-SESSAO-2026-10-28.md`)
-- **Onde parei:** esqueleto + hello-world RODANDO. Serviço FastAPI (`/health`, `/generate`, `/metrics`) com provider `fixture` offline, observabilidade (latência/custo/tokens por request via Prometheus) e log JSON. 4 testes passando. Benchmark: p50 17,3ms / p95 18,0ms. Docker + docker-compose prontos. IaC Terraform (ECS Fargate) em ESQUELETO, não aplicado (sem gasto AWS).
-- **Próximo passo:** (1) provider real barato com teto de custo + medir latência/custo reais; (2) completar a task definition/ALB no Terraform e fazer um deploy de demo com `destroy` depois; (3) OpenTelemetry → CloudWatch.
+- **Data:** 2026-11-06 (bloco de SEXTA, feito pelo Hermes a pedido do Lucas)
+- **Onde parei:** (1) provider `anthropic` pronto com **teto de custo duro** (reserva o pior caso sob lock antes de cada chamada, 429 ao estourar, não sobe sem teto, 502 sem vazar detalhe) + métricas de orçamento; 27 testes contra servidor HTTP falso (passam sem internet), 21 mutantes (20 pegos + 1 equivalente). (2) Terraform COMPLETO (task definition, ALB, SGs, IAM, SSM opcional): `fmt`/`validate` ok, `plan` = 12 recursos (13 com provider pago), travas de variável testadas (CIDR aberto, provider sem chave). Container Docker buildado e testado de verdade (/health, /generate, recusa subir sem teto). Modelo de custo com Pricing API: ~US$ 0,058/h.
+- **O que NÃO foi feito:** nenhuma chamada paga ao LLM (sem latência/custo reais), **nenhum `apply`** (nada na AWS), OpenTelemetry→CloudWatch não começou.
+- **Próximo passo:** (1) ok do Lucas para: rodada real de ~5 chamadas (pior caso ~US$ 0,0007) e/ou `apply` de demo de ~2h (~US$ 0,12) seguido de `destroy`; (2) DECIDIR a conta AWS: o CLI aponta para a conta da GaspariTec (lucas@gasparitecnologia.com.br), não uma pessoal; (3) OpenTelemetry → CloudWatch.

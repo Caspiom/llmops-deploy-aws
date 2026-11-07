@@ -12,3 +12,8 @@ output "log_group" {
   description = "Log group do CloudWatch"
   value       = aws_cloudwatch_log_group.app.name
 }
+
+output "alb_url" {
+  description = "URL do ALB (só responde ao allowed_cidr)"
+  value       = "http://${aws_lb.app.dns_name}"
+}
